@@ -1,0 +1,17 @@
+*.sw[mnop]
+.venv/
+*.pyc
+*.py~
+docs/_build/
+__pycache__/
+.tox/
+*.egg-info/
+.cache/
+.\#*
+dist/
+dev/
+.pytest_cache
+pytestdebug.log
+.vscode/
+deb_dist
+*.tar.gz
