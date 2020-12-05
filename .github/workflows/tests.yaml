@@ -49,10 +49,14 @@ jobs:
         sudo apt-get remove -qy lxd lxd-client
         sudo snap install core
         sudo snap install lxd
-        sudo addgroup lxd || true
+        sudo lxd waitready
+        sudo lxd init --auto
+        sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket
+        echo "/snap/bin" >> $GITHUB_PATH
+        lxc network set lxdbr0 ipv6.address none
         sudo snap install juju --classic
         sudo snap install juju-wait --classic
         sudo snap install charmcraft --beta
         sudo snap install charm --classic
     - name: Run integration tests
-      run: sg lxd 'tox -e integration'
+      run: tox -e integration
