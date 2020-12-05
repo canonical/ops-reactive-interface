@@ -2,10 +2,7 @@ from pathlib import Path
 
 from ops.charm import CharmBase, CharmMeta
 from ops.framework import Framework
-from ops.main import (
-    CHARM_STATE_FILE,
-    _get_event_args,
-)
+from ops.main import _get_event_args
 from ops.model import Model, _ModelBackend
 from ops.storage import SQLiteStorage
 
@@ -22,11 +19,19 @@ from charms.reactive import (
     toggle_flag,
 )
 from charmhelpers.core import hookenv
+from charmhelpers.core import unitdata
 
 try:
     from importlib.metadata import entry_points
 except ImportError:
-    from importlib_metadata import entry_points
+    from pkg_resources import iter_entry_points
+
+    def entry_points():
+        eps = {}
+        for role in ('provides', 'requires', 'peers'):
+            group = 'ops_reactive_interface.' + role
+            eps[group] = list(iter_entry_points(group))
+        return eps
 
 
 class InterfaceAPIFactory:
@@ -65,8 +70,19 @@ class InterfaceAPIFactory:
     def _create_charm(cls):
         if cls._charm is None:
             charm_dir = Path(hookenv.charm_dir())
-            charm_state_path = charm_dir / CHARM_STATE_FILE
-            store = SQLiteStorage(charm_state_path)
+            # Both unitdata and SQLiteStorage want to use the same local file,
+            # and they both try to open and lock it when the class is created.
+            # To make sure we handle charm upgrades gracefully, we want to
+            # force the ops store instance to share the existing connection.
+            # We also need to defer to the reactive framework to do the final
+            # database commit & close, so we patch those out with a no-op.
+            store = SQLiteStorage(':memory:')
+            store.close()
+            store._db = unitdata.kv().conn
+            store._setup()
+            store.commit = lambda: None
+            store.close = lambda: None
+
             meta = CharmMeta(hookenv.metadata())
             model = Model(meta, _ModelBackend())
             framework = Framework(store, charm_dir, meta, model)

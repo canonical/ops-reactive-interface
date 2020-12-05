@@ -1,0 +1,58 @@
+name: Test Suite for CoreDNS
+
+on:
+  - pull_request
+
+jobs:
+  lint-and-unit-tests:
+    name: Lint & Unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: [3.5, 3.6, 3.7, 3.8, 3.9]
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install Tox
+      run: pip install tox
+    - name: Run lint & unit tests
+      run: tox
+
+  integration-test:
+    name: Integration test with LXD
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Fix global gitconfig for confined snap
+      run: |
+        # GH automatically includes the git-lfs plugin and configures it in
+        # /etc/gitconfig.  However, the confinement of the charmcraft snap
+        # means that it can see that this file exists but cannot read it, even
+        # if the file permissions should allow it; this breaks git usage within
+        # the snap. To get around this, we move it from the global gitconfig to
+        # the user's .gitconfig file.
+        cat /etc/gitconfig >> $HOME/.gitconfig
+        sudo rm /etc/gitconfig
+    - name: Install Dependencies
+      run: |
+        pip install tox
+        sudo apt-get remove -qy lxd lxd-client
+        sudo snap install core
+        sudo snap install lxd
+        sudo addgroup lxd || true
+        sudo snap install juju --classic
+        sudo snap install juju-wait --classic
+        sudo snap install charmcraft --beta
+        sudo snap install charm --classic
+    - name: Run integration tests
+      run: sg lxd 'tox -e integration'

@@ -51,6 +51,6 @@ class ORITest(Object):
     def manage_flags(self):
         # This will only be called when used in a reactive charm.
         from charms.reactive import toggle_flag
-        prefix = f'endpoint.{self.relation_name}'
-        toggle_flag(f'{prefix}.received', self.is_received)
-        toggle_flag(f'{prefix}.changed', self.is_changed)
+        prefix = 'endpoint.' + self.relation_name
+        toggle_flag(prefix + '.received', self.is_received)
+        toggle_flag(prefix + '.changed', self.is_changed)

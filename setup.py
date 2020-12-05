@@ -10,7 +10,6 @@ SETUP = {
     'py_modules': ['ops_reactive_interface'],
     'install_requires': [
         'ops>=1.0.0',
-        'importlib_metadata ; python_version < "3.8"',
     ],
     'entry_points': {
         'charms.reactive.relation_factory':

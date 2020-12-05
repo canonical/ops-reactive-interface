@@ -1,4 +1,4 @@
 includes:
-  - layer:caas-base
+  - layer:basic
   - layer:status
   - layer:leadership

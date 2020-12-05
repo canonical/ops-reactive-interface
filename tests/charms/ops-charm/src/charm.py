@@ -19,17 +19,9 @@ class OpsCharm(CharmBase):
         self.taker = ORITest(self, 'take')
         self.sharer = ORITest(self, 'share')
 
-        logger.info(f'is_leader: {self.unit.is_leader}')
-        print(f'is_leader: {self.unit.is_leader}')
-        if self.unit.is_leader:
-            try:
-                self.giver.send(self.app.name)
-                self.sharer.send(self.app.name)
-            except Exception:
-                # XXX: temporarily work around weird hook error infinite loop
-                import traceback
-                logger.error(traceback.format_exc())
-                return
+        if self.unit.is_leader():
+            self.giver.send(self.app.name)
+            self.sharer.send(self.app.name)
 
         self.unit.status = ActiveStatus(json.dumps({
             'taker': {

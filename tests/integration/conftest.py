@@ -1,7 +1,7 @@
 import shutil
-import uuid
 from pathlib import Path
-from subprocess import run, CalledProcessError
+from subprocess import run, CalledProcessError, PIPE
+from uuid import uuid4
 
 import pytest
 import json
@@ -14,6 +14,7 @@ ORI_PATH = TESTS_PATH.parent
 
 
 def pytest_addoption(parser):
+    parser.addoption("--cloud", action="store", default="localhost")
     parser.addoption("--controller", action="store", help="Juju controller")
     parser.addoption("--model", action="store", help="Juju model")
     parser.addoption("--keep", action="store_true",
@@ -23,7 +24,7 @@ def pytest_addoption(parser):
 @pytest.fixture(scope='session')
 def check_deps(autouse=True):
     missing = []
-    for dep in ('microk8s', 'juju', 'charm', 'charmcraft', 'juju-wait'):
+    for dep in ('lxd', 'juju', 'charm', 'charmcraft', 'juju-wait'):
         res = run(['which', dep])
         if res.returncode != 0:
             missing.append(dep)
@@ -38,7 +39,8 @@ def check_deps(autouse=True):
 def pydeps(tmp_path_factory):
     pydeps = tmp_path_factory.mktemp('pydeps', False)
     for src in (ORI_PATH, INTERFACE_PATH):
-        run(['python', 'setup.py', 'sdist', '-d', pydeps], check=True, cwd=src)
+        run(['python', 'setup.py', 'sdist', '-d', str(pydeps)],
+            check=True, cwd=str(src))
     return pydeps
 
 
@@ -59,12 +61,12 @@ def reactive_charm(pydeps, charms_path, builds_path):
     wheelhouse_path = src / 'wheelhouse.txt'
 
     # parameterize wheelhouse.txt to allow installation of built pydeps
-    shutil.copytree(REACTIVE_CHARM_PATH, src)
+    shutil.copytree(str(REACTIVE_CHARM_PATH), str(src))
     wheelhouse_txt = wheelhouse_path.read_text()
     wheelhouse_txt = wheelhouse_txt.format(pydeps=pydeps)
     wheelhouse_path.write_text(wheelhouse_txt)
 
-    run(['charm', 'build', '-d', builds_path, src], check=True)
+    run(['charm', 'build', '-d', str(builds_path), str(src)], check=True)
     return dst
 
 
@@ -75,12 +77,13 @@ def ops_charm(pydeps, charms_path, builds_path):
     requirements_path = src / 'requirements.txt'
 
     # parameterize requirements.txt to allow installation of built pydeps
-    shutil.copytree(OPS_CHARM_PATH, src)
+    shutil.copytree(str(OPS_CHARM_PATH), str(src))
     requirements_txt = requirements_path.read_text()
     requirements_txt = requirements_txt.format(pydeps=pydeps)
     requirements_path.write_text(requirements_txt)
 
-    run(['charmcraft', 'build', '-f', src], check=True, cwd=builds_path)
+    run(['charmcraft', 'build', '-f', str(src)],
+        check=True, cwd=str(builds_path))
     return dst
 
 
@@ -91,7 +94,22 @@ class Juju:
 
     @property
     def full_model(self):
-        return f'{self.controller}:{self.model}'
+        return self.controller + ':' + self.model
+
+    def controllers(self):
+        res = run(['juju', 'controllers', '--format=json'],
+                  stdout=PIPE, check=True)
+        data = json.loads(res.stdout.decode('utf8'))
+        return set((data['controllers'] or {}).keys())
+
+    def models(self):
+        res = run(['juju', 'models', '--format=json', '-c', self.controller],
+                  stdout=PIPE, check=True)
+        models = set()
+        for model in json.loads(res.stdout.decode('utf8'))['models']:
+            models.add(model['name'])
+            models.add(model['short-name'])
+        return models
 
     def bootstrap(self, cloud, name):
         run(['juju', 'bootstrap', cloud, name,
@@ -109,13 +127,26 @@ class Juju:
              '--config', 'test-mode=true',
              '--config', 'automatically-retry-hooks=false'], check=True)
 
-    def destroy_model(self, name):
-        run(['juju', 'destroy-model', '-y', f'{self.controller}:{name}',
+    def remove_application(self, name, force=False):
+        args = [name, '--destroy-storage']
+        if force:
+            args.append('--force')
+        run(['juju', 'remove-application', '-m', self.full_model] + args,
+            check=True)
+
+    def destroy_model(self, name, force=False):
+        if force:
+            # Forcibly remove all applications to prevent errored units from
+            # blocking model destruction.
+            status = self.status()
+            for app in status['applications'].keys():
+                self.remove_application(app, force=True)
+        run(['juju', 'destroy-model', '-y', self.full_model,
              '--destroy-storage'], check=True)
 
     def deploy(self, charm, num_units=1):
         if isinstance(charm, Path):
-            charm = f'./{charm.relative_to(Path.cwd())}'
+            charm = charm.relative_to(Path.cwd())
         run(['juju', 'deploy', '-m', self.full_model,
              str(charm), '-n', str(num_units)], check=True)
 
@@ -129,45 +160,53 @@ class Juju:
 
     def wait(self):
         try:
-            run(['juju', 'wait', '-m', self.full_model, '-wt60'], check=True)
+            run(['juju', 'wait', '-m', self.full_model, '-wt', str(30 * 60)],
+                check=True)
         except CalledProcessError:
-            # run(['juju', 'status', '--format=json', '-m', self.full_model])
-            # run(['juju', 'debug-log', '-m', self.full_model,
-            #      '--replay', '--no-tail'])
+            run(['juju', 'status', '-m', self.full_model])
+            run(['juju', 'debug-log', '-m', self.full_model,
+                 '--replay', '--no-tail',
+                 '--include-module', 'unit',
+                 '--include-module', 'juju.worker.uniter.operation'])
             raise
 
     def status(self):
         res = run(['juju', 'status', '--format=json', '-m', self.full_model],
-                  capture_output=True, check=True)
-        return json.loads(res)
+                  stdout=PIPE, check=True)
+        return json.loads(res.stdout.decode('utf8'))
 
 
 @pytest.fixture(scope='session')
 def controller(request):
-    if request.config.option.controller:
-        yield request.config.option.controller
+    name = request.config.option.controller or 'test-ori-' + uuid4().hex[:8]
+    juju = Juju()
+    if name not in juju.controllers():
+        juju.bootstrap(request.config.option.cloud, name)
+        created = True
     else:
-        juju = Juju()
-        name = 'test-ori-' + uuid.uuid4().hex[:8]
-        juju.bootstrap('microk8s', name)
-        try:
-            yield name
-        finally:
-            if not request.config.option.keep:
-                juju.destroy_controller(name)
+        created = False
+    try:
+        yield name
+    finally:
+        if created and not request.config.option.keep:
+            juju.destroy_controller(name)
 
 
 @pytest.fixture
 def model(controller, request):
     if request.config.option.model:
-        yield Juju(controller, request.config.option.model)
+        name = request.config.option.model
     else:
-        juju = Juju(controller)
         name = request.function.__name__.replace('_', '-')
+
+    juju = Juju(controller, name)
+    if name not in juju.models():
         juju.add_model(name)
-        juju.model = name
-        try:
-            yield juju
-        finally:
-            if not request.config.option.keep:
-                juju.destroy_model(name)
+        created = True
+    else:
+        created = False
+    try:
+        yield juju
+    finally:
+        if created and not request.config.option.keep:
+            juju.destroy_model(name, force=True)

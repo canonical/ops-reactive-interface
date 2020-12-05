@@ -4,7 +4,7 @@ description: |
 summary: |
   Test charm for ops_interface using operator framework
 min-juju-version: 2.8.0
-series: [kubernetes]
+series: ['focal']
 maintainers: ['Cory Johns <cory.johns@canonical.com>']
 tags: ["test"]
 provides:

@@ -11,7 +11,6 @@ SETUP = {
     'install_requires': [
         'ops>=1.0.0',
         'ops_reactive_interface',
-        'importlib_metadata ; python_version < "3.8"',
     ],
     'entry_points': {
         'ops_reactive_interface.provides': 'ori-test = ori_test:ORITest',

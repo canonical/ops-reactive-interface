@@ -1,3 +1,8 @@
 ops>=1.0.0
-file://{pydeps}/ops_reactive_interface-1.0.0.tar.gz
-file://{pydeps}/oi-test-1.0.0.tar.gz
+# TODO: switch this once reactive PR is merged and 1.4.0 is released
+git+https://github.com/juju-solutions/charms.reactive@johnsca/register-rel-fact-and-callback-triggers#egg=charms.reactive
+#charms.reactive>=1.4.0,<2.0.0
+
+# built locally as part of the test
+file://{pydeps}/ops_reactive_interface-1.0.0.tar.gz#egg=ops_reactive_interface
+file://{pydeps}/oi-test-1.0.0.tar.gz#egg=oi_test
