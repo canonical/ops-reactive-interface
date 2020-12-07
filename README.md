@@ -172,26 +172,27 @@ same SQLite storage backend as the charms.reactive framework.
 The following flags will be automatically managed during the startup of each
 hook for each relation endpoint:
 
-* `endpoint.{relation_name}.created` Set when the relation is created (there is
-  at least one relation ID available), cleared when the relation is broken (no
-  relation IDs are available).
-* `endpoint.{relation_name}.joined` Set when at least one unit is available on
-  the relation endpoint, cleared when there are no longer any units available.
-  [&dagger;](#note1)
+* `endpoint.{relation_name}.created` Set when any relation is created on the
+  endpoint (i.e., there is at least one relation ID available). Cleared when all
+  relations are broken (i.e., no relation IDs are available).
+
+* `endpoint.{relation_name}.joined` Set when any relation is joined on the
+  endpoint (i.e., there is at least one related unit on any available relation
+  ID). Cleared when no relations are joined (i.e., no relation IDs are available
+  or no related units are available on any relation IDs).
+
 * `endpoint.{relation_name}.changed` Set when relation data has changed.
-  [&ddagger;](#note2)
+  [&ddagger;](#note-changed-flag)
 
-<span id="note1">&dagger;</span>: Regardless of how many relations are attached
-to the relation endpoint, a single unit on any of them is sufficient for the
-`.joined` flag to be set.
-
-<span id="note2">&ddagger;</span>: If the interface API class has an
+<span id="note-changed-flag">&ddagger;</span>: If the interface API class has an
 `is_changed` property, the `.changed` will be set whenever that is `True` and
 cleared whenever it is `False`.  Additionally, when the flag is cleared by a
 reactive charm, this library will attempt to set the property to `False` (and
 ignore failures due to it being a read-only property).  This can be used to
 ensure the flag most accurately reflects the salient information about the
-relation(s).
+relation(s). Otherwise, the flag is set any time a
+`{relation_name}-relation-changed` hook is seen and is never cleared
+automatically.
 
 #### Custom Flags
 
