@@ -92,11 +92,15 @@ class InterfaceAPIFactory:
 
     @classmethod
     def _startup(cls):
+        cls._emit_relation_events()
+
         for relation_name, relation_api in cls._relation_apis.items():
             cls._manage_automatic_flags(relation_name, relation_api)
             if hasattr(relation_api, 'manage_flags'):
                 relation_api.manage_flags()
 
+    @classmethod
+    def _emit_relation_events(cls):
         cls._charm.framework.reemit()
 
         hook_name = hookenv.hook_name()
