@@ -1,3 +1,0 @@
-ops>=1.0.0
-file://{pydeps}/ops_reactive_interface-1.0.0.tar.gz#egg=ops_reactive_interface
-file://{pydeps}/ori-test-1.0.0.tar.gz#egg=oi_test
