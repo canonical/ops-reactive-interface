@@ -2,10 +2,10 @@ from setuptools import setup
 
 
 SETUP = {
-    'name': "oi-test",
+    'name': "ori-test",
     'version': '1.0.0',
     'author': "Cory Johns",
-    'author_email': "johnsca@gmail.com",
+    'author_email': "cory.johns@canonical.com",
     'url': "https://github.com/juju-solutions/ops-reactive-interface",
     'py_modules': ['ori_test'],
     'install_requires': [

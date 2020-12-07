@@ -5,4 +5,4 @@ git+https://github.com/juju-solutions/charms.reactive@johnsca/register-rel-fact-
 
 # built locally as part of the test
 file://{pydeps}/ops_reactive_interface-1.0.0.tar.gz#egg=ops_reactive_interface
-file://{pydeps}/oi-test-1.0.0.tar.gz#egg=oi_test
+file://{pydeps}/ori-test-1.0.0.tar.gz#egg=ori_test
