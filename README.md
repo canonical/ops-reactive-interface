@@ -76,7 +76,7 @@ provides:
     interface: my-interface
 ```
 
-The associate charm might look something like:
+The associated charm might look something like:
 
 ```python
 from ops.charm import CharmBase
@@ -176,15 +176,15 @@ hook for each relation endpoint:
   at least one relation ID available), cleared when the relation is broken (no
   relation IDs are available any longer).
 * `endpoint.{relation_name}.joined` Set when at least one unit has joined the
-  relation [\[1\]][], cleared when there are no longer any units.
+  relation [&dagger;][], cleared when there are no longer any units.
 * `endpoint.{relation_name}.changed` Set when relation data has changed.
-  [\[2\]][]
+  [&ddagger;][]
 
-[\[1\]]: Note that in the case of multiple attached relations, only one relation
+[&dagger;]: Note that in the case of multiple attached relations, only one relation
 ID is required to have a unit associated with it for the `.joined` flag to be
 set.
 
-[\[2\]]: If the interface API class has an `is_changed` property, the `.changed`
+[&ddagger;]: If the interface API class has an `is_changed` property, the `.changed`
 will be set whenever that is `True` and cleared whenever it is `False`.
 Additionally, when the flag is cleared by a reactive charm, this library will
 attempt to set the property to `False` (and ignore failures due to it being a
