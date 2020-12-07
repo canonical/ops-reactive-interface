@@ -185,9 +185,9 @@ hook for each relation endpoint:
   [&ddagger;](#note-changed-flag)
 
 <span id="note-changed-flag">&ddagger;</span>: If the interface API class has an
-`is_changed` property, the `.changed` flag will be set whenever that is `True`
-and cleared whenever it is `False`.  Additionally, when the flag is cleared by a
-reactive charm, this library will attempt to set the property to `False` (and
+`is_changed` property, the `.changed` flag will be set if that property is
+`True` and cleared if it is `False`.  Additionally, when the flag is cleared by
+a reactive charm, this library will attempt to set the property to `False` (and
 ignore failures due to it being a read-only property).  This can be used to
 ensure the flag most accurately reflects the salient information about the
 relation(s). Otherwise, the flag is set any time a
