@@ -124,10 +124,17 @@ class InterfaceAPIFactory:
                                             for rel in relations))
         if hasattr(relation_api, 'is_changed'):
             toggle_flag(prefix + '.changed', relation_api.is_changed)
+
+            def _clear_changed_property_from_flag():
+                try:
+                    relation_api.is_changed = False
+                except AttributeError as e:
+                    if e.args == ("can't set attribute",):
+                        pass
+                    raise
+
             register_trigger(when_not=prefix + '.changed',
-                             callback=lambda: setattr(relation_api,
-                                                      'is_changed',
-                                                      False))
+                             callback=_clear_changed_property_from_flag)
         elif hookenv.hook_name() == relation_name + '-relation-changed':
             set_flag(prefix + '.changed')
 
