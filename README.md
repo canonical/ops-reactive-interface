@@ -190,7 +190,7 @@ hook for each relation endpoint:
 a reactive charm, this library will attempt to set the property to `False` (and
 ignore failures due to it being a read-only property).  This can be used to
 ensure the flag most accurately reflects the salient information about the
-relation(s). Otherwise, the flag is set any time a
+relation(s). If no `is_changed` property exists, the flag is set any time a
 `{relation_name}-relation-changed` hook is seen and is never cleared
 automatically.
 
