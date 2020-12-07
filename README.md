@@ -174,22 +174,24 @@ hook for each relation endpoint:
 
 * `endpoint.{relation_name}.created` Set when the relation is created (there is
   at least one relation ID available), cleared when the relation is broken (no
-  relation IDs are available any longer).
-* `endpoint.{relation_name}.joined` Set when at least one unit has joined the
-  relation [&dagger;](#note1), cleared when there are no longer any units.
+  relation IDs are available).
+* `endpoint.{relation_name}.joined` Set when at least one unit is available on
+  the relation endpoint, cleared when there are no longer any units available.
+  [&dagger;](#note1)
 * `endpoint.{relation_name}.changed` Set when relation data has changed.
   [&ddagger;](#note2)
 
-<span id="note1">&dagger;</span>: Note that in the case of multiple attached relations, only one relation
-ID is required to have a unit associated with it for the `.joined` flag to be
-set.
+<span id="note1">&dagger;</span>: Regardless of how many relations are attached
+to the relation endpoint, a single unit on any of them is sufficient for the
+`.joined` flag to be set.
 
-<span id="note2">&ddagger;</span>: If the interface API class has an `is_changed` property, the `.changed`
-will be set whenever that is `True` and cleared whenever it is `False`.
-Additionally, when the flag is cleared by a reactive charm, this library will
-attempt to set the property to `False` (and ignore failures due to it being a
-read-only property).  This can be used to ensure the flag most accurately
-reflects the salient information about the relation(s).
+<span id="note2">&ddagger;</span>: If the interface API class has an
+`is_changed` property, the `.changed` will be set whenever that is `True` and
+cleared whenever it is `False`.  Additionally, when the flag is cleared by a
+reactive charm, this library will attempt to set the property to `False` (and
+ignore failures due to it being a read-only property).  This can be used to
+ensure the flag most accurately reflects the salient information about the
+relation(s).
 
 #### Custom Flags
 
