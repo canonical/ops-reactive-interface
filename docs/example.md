@@ -1,7 +1,8 @@
 # Example
 
-This example is of a simple interface protocol which lets one side say something
-to the other, but the listening charm is older and uses the charms.reactive
+This example is of a simple [interface](#interface) which lets a [speaking
+charm](#speaker-charm-provider) say something to the other, but the [listening
+charm](#listener-charm-requirer) is older and uses the charms.reactive
 framework.
 
 ## Interface
@@ -107,7 +108,7 @@ class SpeakerCharm(CharmBase):
 
 ## Listener Charm (Requirer)
 
-### `metadata.yaml
+### `metadata.yaml`
 
 ```yaml
 name: listener
@@ -117,7 +118,7 @@ requires:
     limit: 1
 ```
 
-### `wheelhouse.txt
+### `wheelhouse.txt`
 
 ```
 speaking-interface
