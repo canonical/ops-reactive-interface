@@ -16,6 +16,7 @@ SETUP = {
             'interface_api = ops_reactive_interface:InterfaceAPIFactory',
     },
     'license': "Apache License 2.0",
+    'long_description_content_type': 'text/markdown',
     'long_description': open('README.md').read(),
     'description': 'Helper for interface APIs written for '
                    'the charm operator framework, which can '
