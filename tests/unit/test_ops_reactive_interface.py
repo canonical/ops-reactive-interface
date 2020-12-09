@@ -55,13 +55,15 @@ def test_startup(harness):
 
     class Observer:
         handle = Handle(charm, 'observer', 'test')
-        called = False
+        called = None
 
         def call(self, event):
-            self.called = True
+            self.called = type(event).__name__
 
     observer = Observer()
+    fw.observe(charm.on.config_changed, observer.call)
     fw.observe(charm.on.give_relation_created, observer.call)
+    fw.observe(charm.on.upgrade_charm, observer.call)
 
     hookenv.hook_name.return_value = 'config-changed'
     IAF._startup()
@@ -74,13 +76,13 @@ def test_startup(harness):
     assert register_trigger.called
 
     rel_id = harness.add_relation('give', 'other')
-    assert observer.called
+    assert observer.called == 'RelationCreatedEvent'
     assert not give.received
     assert not give.is_received
     assert not give.is_changed
     assert not is_flag_set('endpoint.give.created')
     assert not is_flag_set('endpoint.give.received')
-    observer.called = False
+    observer.called = None
 
     harness.add_relation_unit(rel_id, 'other/0')
     harness.update_relation_data(rel_id, 'other', {'sent': 'foo'})
@@ -96,9 +98,14 @@ def test_startup(harness):
                                  'JUJU_RELATION_ID': str(rel_id),
                                  'JUJU_REMOTE_APP': 'other'}):
         IAF._startup()
-    assert observer.called
+    assert observer.called == 'RelationCreatedEvent'
     assert give.received
     assert give.is_received
     assert give.is_changed
     assert is_flag_set('endpoint.give.created')
     assert is_flag_set('endpoint.give.received')
+
+    hookenv.hook_name.return_value = 'upgrade-charm'
+    observer.called = None
+    IAF._startup()
+    assert observer.called == 'UpgradeCharmEvent'

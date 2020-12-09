@@ -2,11 +2,11 @@
 
 Since the charms.reactive framework does not use the Operator framework's event
 system, most events at the charm level will be missing or ignored. However, the
-library will ensure that the events for the specific relation endpoints to which
-the API instances are bound will be emitted, so that the classes can use them as
-they would in an Operator framework charm. Additionally, any internal events
-emitted and observed by the API classes, as well as deferred events, will
-function as expected.
+library will ensure that the events for the specific relation endpoints to
+which the API instances are bound, as well as the `upgrade_charm` event, will
+be emitted, so that the classes can use them as they would in an Operator
+framework charm. Additionally, any internal events emitted and observed by the
+API classes, as well as deferred events, will function as expected.
 
 Note that these events are processed before the flags for the interface API
 instance are managed, meaning those event handlers can be used to manage [stored

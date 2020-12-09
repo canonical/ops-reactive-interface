@@ -92,7 +92,7 @@ class InterfaceAPIFactory:
 
     @classmethod
     def _startup(cls):
-        cls._emit_relation_events()
+        cls._emit_events()
 
         for relation_name, relation_api in cls._relation_apis.items():
             cls._manage_automatic_flags(relation_name, relation_api)
@@ -100,10 +100,18 @@ class InterfaceAPIFactory:
                 relation_api.manage_flags()
 
     @classmethod
-    def _emit_relation_events(cls):
+    def _emit_events(cls):
+        # Re-emit deferred events.
         cls._charm.framework.reemit()
 
         hook_name = hookenv.hook_name()
+
+        # Check for and emit upgrade_charm event.
+        if hook_name == 'upgrade-charm':
+            cls._charm.on.upgrade_charm.emit()
+            return
+
+        # Check for relation events for bound classes.
         if '-relation-' not in hook_name:
             return
         hook_parts = hook_name.rsplit('-', 2)
