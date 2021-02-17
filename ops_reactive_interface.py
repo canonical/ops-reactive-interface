@@ -107,8 +107,15 @@ class InterfaceAPIFactory:
         hook_name = hookenv.hook_name()
 
         # Check for and emit upgrade_charm event.
+        # (Might be needed for data format changes.)
         if hook_name == 'upgrade-charm':
             cls._charm.on.upgrade_charm.emit()
+            return
+
+        # Check for and emit leader_elected event.
+        # (Might be needed for app rel data.)
+        if hook_name == 'leader-elected':
+            cls._charm.on.leader_elected.emit()
             return
 
         # Check for relation events for bound classes.
