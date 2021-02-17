@@ -64,6 +64,7 @@ def test_startup(harness):
     fw.observe(charm.on.config_changed, observer.call)
     fw.observe(charm.on.give_relation_created, observer.call)
     fw.observe(charm.on.upgrade_charm, observer.call)
+    fw.observe(charm.on.leader_elected, observer.call)
 
     hookenv.hook_name.return_value = 'config-changed'
     IAF._startup()
@@ -109,3 +110,8 @@ def test_startup(harness):
     observer.called = None
     IAF._startup()
     assert observer.called == 'UpgradeCharmEvent'
+
+    hookenv.hook_name.return_value = 'leader-elected'
+    observer.called = None
+    IAF._startup()
+    assert observer.called == 'LeaderElectedEvent'
