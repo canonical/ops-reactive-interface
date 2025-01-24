@@ -1,15 +1,18 @@
 import os
 from unittest.mock import patch, Mock
+from charms.unit_test import MockKV
 
 import pytest
 
-from ops.charm import CharmBase
-from ops.framework import Handle
+from ops import CharmBase, Handle, Object
 
 
 def test_without_reactive():
     with pytest.raises(ImportError):
         import ops_reactive_interface  # noqa
+
+
+MockKV.conn = Mock()
 
 
 @pytest.mark.dependency()
@@ -53,14 +56,14 @@ def test_startup(harness):
 
     give = IAF.from_name('give')
 
-    class Observer:
+    class Observer(Object):
         handle = Handle(charm, 'observer', 'test')
         called = None
 
         def call(self, event):
             self.called = type(event).__name__
 
-    observer = Observer()
+    observer = Observer(charm, "observer")
     fw.observe(charm.on.config_changed, observer.call)
     fw.observe(charm.on.give_relation_created, observer.call)
     fw.observe(charm.on.upgrade_charm, observer.call)
@@ -96,6 +99,7 @@ def test_startup(harness):
 
     hookenv.hook_name.return_value = 'give-relation-created'
     with patch.dict(os.environ, {'JUJU_RELATION': 'give',
+                                 'JUJU_VERSION': '3.6.2',
                                  'JUJU_RELATION_ID': str(rel_id),
                                  'JUJU_REMOTE_APP': 'other'}):
         IAF._startup()

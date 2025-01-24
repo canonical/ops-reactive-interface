@@ -1,3 +1,5 @@
 ops>=1.0.0
-file://{pydeps}/ops_reactive_interface-1.0.0.tar.gz#egg=ops_reactive_interface
-file://{pydeps}/ori-test-1.0.0.tar.gz#egg=oi_test
+
+# built locally as part of the test
+file:///root/parts/charm/build/{pydeps}/ops_reactive_interface-1.1.0.tar.gz#egg=ops_reactive_interface
+file:///root/parts/charm/build/{pydeps}/ori_test-1.0.0.tar.gz#egg=ori_test

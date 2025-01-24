@@ -1,0 +1,39 @@
+name: ops-charm
+description: |
+  Test charm for ops_interface using operator framework
+summary: |
+  Test charm for ops_interface using operator framework
+links:
+  contact: https://launchpad.net/~containers
+
+assumes:
+- juju >= 2.8.0
+type: charm
+bases:
+- build-on:
+  - name: ubuntu
+    channel: "20.04"
+    architectures: [amd64]
+  run-on:
+  - name: ubuntu
+    channel: "20.04"
+    architectures: [amd64]
+  - name: ubuntu
+    channel: "22.04"
+    architectures: [amd64]
+  - name: ubuntu
+    channel: "24.04"
+    architectures: [amd64]
+
+provides:
+  give:
+    interface: ori-test
+requires:
+  take:
+    interface: ori-test
+peers:
+  share:
+    interface: ori-test
+
+config:
+  options: {}
