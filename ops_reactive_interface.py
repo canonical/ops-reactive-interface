@@ -21,17 +21,7 @@ from charms.reactive import (
 from charmhelpers.core import hookenv
 from charmhelpers.core import unitdata
 
-try:
-    from importlib.metadata import entry_points
-except ImportError:
-    from pkg_resources import iter_entry_points
-
-    def entry_points():
-        eps = {}
-        for role in ('provides', 'requires', 'peers'):
-            group = 'ops_reactive_interface.' + role
-            eps[group] = list(iter_entry_points(group))
-        return eps
+from pkg_resources import iter_entry_points
 
 
 class InterfaceAPIFactory:
@@ -41,10 +31,10 @@ class InterfaceAPIFactory:
     @classmethod
     def load(cls):
         charm = cls._create_charm()
-        eps = entry_points()
         for role in ('provides', 'requires', 'peers'):
             role_endpoints = getattr(charm.meta, role)
-            for ep in eps.get('ops_reactive_interface.{}'.format(role), []):
+            entry_point = 'ops_reactive_interface.{}'.format(role)
+            for ep in iter_entry_points(entry_point):
                 interface_name = ep.name
                 for endpoint_name, endpoint_meta in role_endpoints.items():
                     if endpoint_meta.interface_name == interface_name:

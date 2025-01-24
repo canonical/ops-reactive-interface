@@ -3,13 +3,13 @@ from setuptools import setup
 
 SETUP = {
     'name': "ops_reactive_interface",
-    'version': '1.0.1',
+    'version': '1.1.0',
     'author': "Cory Johns",
     'author_email': "cory.johns@canonical.com",
     'url': "https://github.com/juju-solutions/ops-reactive-interface",
     'py_modules': ['ops_reactive_interface'],
     'install_requires': [
-        'ops>=1.0.0',
+        'ops>=1.0.0,<2.16.0',
     ],
     'entry_points': {
         'charms.reactive.relation_factory':
