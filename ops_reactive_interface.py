@@ -1,3 +1,5 @@
+import inspect
+import os
 from pathlib import Path
 
 from ops.charm import CharmBase, CharmMeta
@@ -5,6 +7,10 @@ from ops.framework import Framework
 from ops.main import _get_event_args
 from ops.model import Model, _ModelBackend
 from ops.storage import SQLiteStorage
+try:
+    from ops.jujucontext import _JujuContext
+except ImportError:
+    _JujuContext = None
 
 # NB: This module should only be imported by the charms.reactive framework
 #     detecting its entry point and loading it. When used in an operator
@@ -22,6 +28,20 @@ from charmhelpers.core import hookenv
 from charmhelpers.core import unitdata
 
 from pkg_resources import iter_entry_points
+
+
+def _build_event_args(cls, event):
+    sig = inspect.signature(_get_event_args)
+    if sig.parameters.keys() == {"charm", "bound_event"}:
+        return _get_event_args(cls._charm, event)
+    elif (
+        _JujuContext and
+        sig.parameters.keys() == {"charm", "bound_event", "juju_context"}
+    ):
+        _juju_context = _JujuContext.from_dict(os.environ)
+        return _get_event_args(cls._charm, event, _juju_context)
+    else:
+        raise NotImplementedError("Unsupported signature for _get_event_args")
 
 
 class InterfaceAPIFactory:
@@ -117,7 +137,7 @@ class InterfaceAPIFactory:
             return
         event_name = hook_name.replace('-', '_')
         event = getattr(cls._charm.on, event_name)
-        args, kwargs = _get_event_args(cls._charm, event)
+        args, kwargs = _build_event_args(cls, event)
         event.emit(*args, **kwargs)
 
     @classmethod

@@ -9,7 +9,7 @@ SETUP = {
     'url': "https://github.com/juju-solutions/ops-reactive-interface",
     'py_modules': ['ops_reactive_interface'],
     'install_requires': [
-        'ops>=1.0.0,<2.16.0',
+        'ops>=1.0.0',
     ],
     'entry_points': {
         'charms.reactive.relation_factory':

@@ -99,6 +99,7 @@ def test_startup(harness):
 
     hookenv.hook_name.return_value = 'give-relation-created'
     with patch.dict(os.environ, {'JUJU_RELATION': 'give',
+                                 'JUJU_VERSION': '3.6.2',
                                  'JUJU_RELATION_ID': str(rel_id),
                                  'JUJU_REMOTE_APP': 'other'}):
         IAF._startup()

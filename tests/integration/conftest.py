@@ -144,8 +144,8 @@ class Juju:
             status = self.status()
             for app in status['applications'].keys():
                 self.remove_application(app, force=True)
-        run(['juju', 'destroy-model', '--no-prompt', '--force',  name,
-             '--destroy-storage'], check=True)
+        run(['juju', 'destroy-model', self.full_model,
+             '--no-prompt', '--force', '--destroy-storage'], check=True)
 
     def deploy(self, charm, num_units=1):
         if isinstance(charm, Path):
