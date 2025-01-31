@@ -36,12 +36,12 @@ def check_deps(autouse=True):
 
 
 @pytest.fixture(scope='session')
-def pydeps(tmp_path_factory):
-    pydeps = tmp_path_factory.mktemp('pydeps', False)
+def pydeps(charms_path):
+    pydeps = charms_path / "ops-charm/pydeps"
     for src in (ORI_PATH, INTERFACE_PATH):
         run(['python', 'setup.py', 'sdist', '-d', str(pydeps)],
             check=True, cwd=str(src))
-    return pydeps
+    return str(pydeps)
 
 
 @pytest.fixture(scope='session')
@@ -56,8 +56,9 @@ def builds_path(tmp_path_factory):
 
 @pytest.fixture(scope='session')
 def reactive_charm(pydeps, charms_path, builds_path):
+    ch_file = Path("reactive-charm.charm")
     src = charms_path / 'reactive-charm'
-    dst = builds_path / 'reactive-charm'
+    dst = builds_path / ch_file
     wheelhouse_path = src / 'wheelhouse.txt'
 
     # parameterize wheelhouse.txt to allow installation of built pydeps
@@ -66,24 +67,26 @@ def reactive_charm(pydeps, charms_path, builds_path):
     wheelhouse_txt = wheelhouse_txt.format(pydeps=pydeps)
     wheelhouse_path.write_text(wheelhouse_txt)
 
-    run(['charm', 'build', '-d', str(builds_path), str(src)], check=True)
+    run(['charm', 'build', '-d', str(builds_path), "-F", str(src)], check=True)
+    ch_file.rename(dst)
     return dst
 
 
 @pytest.fixture(scope='session')
 def ops_charm(pydeps, charms_path, builds_path):
     src = charms_path / 'ops-charm'
-    dst = builds_path / 'ops-charm.charm'
+    deps = Path(pydeps).relative_to(src)
     requirements_path = src / 'requirements.txt'
 
     # parameterize requirements.txt to allow installation of built pydeps
-    shutil.copytree(str(OPS_CHARM_PATH), str(src))
+    shutil.copytree(str(OPS_CHARM_PATH), str(src), dirs_exist_ok=True)
     requirements_txt = requirements_path.read_text()
-    requirements_txt = requirements_txt.format(pydeps=pydeps)
+    requirements_txt = requirements_txt.format(pydeps=deps)
     requirements_path.write_text(requirements_txt)
 
-    run(['charmcraft', 'build', '-f', str(src)],
+    run(['charmcraft', 'pack', '-p', str(src)],
         check=True, cwd=str(builds_path))
+    dst = next(builds_path.glob('ops-charm*.charm'))
     return dst
 
 
@@ -118,7 +121,7 @@ class Juju:
              '--config', 'automatically-retry-hooks=false'], check=True)
 
     def destroy_controller(self, name):
-        run(['juju', 'destroy-controller', '-y', name,
+        run(['juju', 'destroy-controller', '--no-prompt', name,
              '--destroy-all-models', '--destroy-storage'], check=True)
 
     def add_model(self, name):
@@ -128,7 +131,7 @@ class Juju:
              '--config', 'automatically-retry-hooks=false'], check=True)
 
     def remove_application(self, name, force=False):
-        args = [name, '--destroy-storage']
+        args = [name, '--destroy-storage', '--no-prompt']
         if force:
             args.append('--force')
         run(['juju', 'remove-application', '-m', self.full_model] + args,
@@ -141,8 +144,8 @@ class Juju:
             status = self.status()
             for app in status['applications'].keys():
                 self.remove_application(app, force=True)
-        run(['juju', 'destroy-model', '-y', self.full_model,
-             '--destroy-storage'], check=True)
+        run(['juju', 'destroy-model', self.full_model,
+             '--no-prompt', '--force', '--destroy-storage'], check=True)
 
     def deploy(self, charm, num_units=1):
         if isinstance(charm, Path):
@@ -155,12 +158,12 @@ class Juju:
              str(charm)], check=True)
 
     def add_relation(self, a, b):
-        run(['juju', 'add-relation', '-m', self.full_model,
+        run(['juju', 'integrate', '-m', self.full_model,
              str(a), str(b)], check=True)
 
     def wait(self):
         try:
-            run(['juju', 'wait', '-m', self.full_model, '-wt', str(30 * 60)],
+            run(['juju-wait', '-m', self.full_model, '-vwt', str(30 * 60)],
                 check=True)
         except CalledProcessError:
             run(['juju', 'status', '-m', self.full_model])

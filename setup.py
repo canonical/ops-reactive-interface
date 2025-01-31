@@ -3,7 +3,7 @@ from setuptools import setup
 
 SETUP = {
     'name': "ops_reactive_interface",
-    'version': '1.0.1',
+    'version': '1.1.0',
     'author': "Cory Johns",
     'author_email': "cory.johns@canonical.com",
     'url': "https://github.com/juju-solutions/ops-reactive-interface",

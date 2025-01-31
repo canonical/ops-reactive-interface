@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: [3.5, 3.6, 3.7, 3.8, 3.9]
+        python: ["3.8", "3.10", "3.12"]
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
     - name: Install Tox
@@ -24,13 +24,13 @@ jobs:
 
   integration-test:
     name: Integration test with LXD
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Setup Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: 3.8
     - name: Fix global gitconfig for confined snap
@@ -46,17 +46,24 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install tox
-        sudo apt-get remove -qy lxd lxd-client
         sudo snap install core
-        sudo snap install lxd
+        sudo snap install lxd --channel=6/stable
+        sudo snap install juju --channel=3/stable
+        sudo snap install juju-wait --classic
+        sudo snap install charmcraft --channel=2.x/stable --classic
+        sudo snap install charm --channel=3.x/stable --classic
+    - name: Initialize LXD
+      run: |
         sudo lxd waitready
         sudo lxd init --auto
         sudo chmod a+wr /var/snap/lxd/common/lxd/unix.socket
-        echo "/snap/bin" >> $GITHUB_PATH
         lxc network set lxdbr0 ipv6.address none
-        sudo snap install juju --classic
-        sudo snap install juju-wait --classic
-        sudo snap install charmcraft --beta
-        sudo snap install charm --classic
+        sudo usermod -a -G lxd $USER
+
+        # Work-around clash between docker and lxd
+        # https://github.com/docker/for-linux/issues/1034
+        sudo iptables -F FORWARD
+        sudo iptables -P FORWARD ACCEPT
+
     - name: Run integration tests
       run: tox -e integration

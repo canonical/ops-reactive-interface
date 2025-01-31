@@ -1,3 +1,5 @@
+import inspect
+import os
 from pathlib import Path
 
 from ops.charm import CharmBase, CharmMeta
@@ -5,6 +7,10 @@ from ops.framework import Framework
 from ops.main import _get_event_args
 from ops.model import Model, _ModelBackend
 from ops.storage import SQLiteStorage
+try:
+    from ops.jujucontext import _JujuContext
+except ImportError:
+    _JujuContext = None
 
 # NB: This module should only be imported by the charms.reactive framework
 #     detecting its entry point and loading it. When used in an operator
@@ -21,17 +27,21 @@ from charms.reactive import (
 from charmhelpers.core import hookenv
 from charmhelpers.core import unitdata
 
-try:
-    from importlib.metadata import entry_points
-except ImportError:
-    from pkg_resources import iter_entry_points
+from pkg_resources import iter_entry_points
 
-    def entry_points():
-        eps = {}
-        for role in ('provides', 'requires', 'peers'):
-            group = 'ops_reactive_interface.' + role
-            eps[group] = list(iter_entry_points(group))
-        return eps
+
+def _build_event_args(cls, event):
+    sig = inspect.signature(_get_event_args)
+    if sig.parameters.keys() == {"charm", "bound_event"}:
+        return _get_event_args(cls._charm, event)
+    elif (
+        _JujuContext and
+        sig.parameters.keys() == {"charm", "bound_event", "juju_context"}
+    ):
+        _juju_context = _JujuContext.from_dict(os.environ)
+        return _get_event_args(cls._charm, event, _juju_context)
+    else:
+        raise NotImplementedError("Unsupported signature for _get_event_args")
 
 
 class InterfaceAPIFactory:
@@ -41,10 +51,10 @@ class InterfaceAPIFactory:
     @classmethod
     def load(cls):
         charm = cls._create_charm()
-        eps = entry_points()
         for role in ('provides', 'requires', 'peers'):
             role_endpoints = getattr(charm.meta, role)
-            for ep in eps.get('ops_reactive_interface.{}'.format(role), []):
+            entry_point = 'ops_reactive_interface.{}'.format(role)
+            for ep in iter_entry_points(entry_point):
                 interface_name = ep.name
                 for endpoint_name, endpoint_meta in role_endpoints.items():
                     if endpoint_meta.interface_name == interface_name:
@@ -127,7 +137,7 @@ class InterfaceAPIFactory:
             return
         event_name = hook_name.replace('-', '_')
         event = getattr(cls._charm.on, event_name)
-        args, kwargs = _get_event_args(cls._charm, event)
+        args, kwargs = _build_event_args(cls, event)
         event.emit(*args, **kwargs)
 
     @classmethod
