@@ -46,7 +46,7 @@ class ORITest(Object):
     def _hash(self):
         if not self.received:
             return None
-        return md5(str(self.received).encode('utf8')).hexdigest()
+        return md5(str(self.received).encode('utf8')).hexdigest() # nosec B324
 
     def manage_flags(self):
         # This will only be called when used in a reactive charm.
